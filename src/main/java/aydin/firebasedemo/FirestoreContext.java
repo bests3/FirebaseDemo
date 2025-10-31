@@ -12,24 +12,23 @@ import java.io.IOException;
 
 public class FirestoreContext {
 
-    public Firestore firebase() {
+    public Firestore firebase()  {
         try {
-
-            FileInputStream serviceAccount =
-                    new FileInputStream("src/main/resources/aydin/firebasedemo/key.json");
-
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .build();
-
-            FirebaseApp.initializeApp(options);
-
+            if(FirebaseApp.getApps().isEmpty()) {
+                FileInputStream serviceAccount =
+                        new FileInputStream("src/main/resources/aydin/firebasedemo/key.json");
+                FirebaseOptions options = FirebaseOptions.builder()
+                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                        .build();
+                FirebaseApp.initializeApp(options);
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
             System.exit(1);
         }
         return FirestoreClient.getFirestore();
     }
+
 
 
 }
