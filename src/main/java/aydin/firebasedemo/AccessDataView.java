@@ -8,6 +8,7 @@ import javafx.beans.property.StringProperty;
 public class AccessDataView{
 
     private final StringProperty personName = new SimpleStringProperty();
+    private final StringProperty phoneNumber = new SimpleStringProperty();
     private final int age=0;
     private final ReadOnlyBooleanWrapper writePossible = new ReadOnlyBooleanWrapper();
 

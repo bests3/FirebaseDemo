@@ -25,22 +25,18 @@ import javafx.scene.control.TextField;
 public class PrimaryController {
     @FXML
     private TextField ageTextField;
-
     @FXML
     private TextField nameTextField;
-
+    @FXML
+    private TextField phoneNumberTextField;
     @FXML
     private TextArea outputTextArea;
-
     @FXML
     private Button readButton;
-
     @FXML
     private Button registerButton;
-
     @FXML
     private Button switchSecondaryViewButton;
-
     @FXML
     private Button writeButton;
 
@@ -51,31 +47,23 @@ public class PrimaryController {
     public ObservableList<Person> getListOfUsers() {
         return listOfUsers;
     }
-
     void initialize() {
-
         AccessDataView accessDataViewModel = new AccessDataView();
         nameTextField.textProperty().bindBidirectional(accessDataViewModel.personNameProperty());
         writeButton.disableProperty().bind(accessDataViewModel.isWritePossibleProperty().not());
     }
-
-
     @FXML
     void readButtonClicked(ActionEvent event) {
         readFirebase();
     }
-
     @FXML
     void registerButtonClicked(ActionEvent event) {
         registerUser();
     }
-
-
     @FXML
     void writeButtonClicked(ActionEvent event) {
         addData();
     }
-
     @FXML
     private void switchToSecondary() throws IOException {
         DemoApp.setRoot("secondary");
@@ -83,10 +71,7 @@ public class PrimaryController {
     public boolean readFirebase()
     {
         key = false;
-
-
         ApiFuture<QuerySnapshot> future =  DemoApp.fstore.collection("Persons").get();
-
         List<QueryDocumentSnapshot> documents;
         try
         {
@@ -95,13 +80,18 @@ public class PrimaryController {
             {
                 System.out.println("Getting (reading) data from firabase database....");
                 listOfUsers.clear();
+                outputTextArea.clear();
                 for (QueryDocumentSnapshot document : documents)
                 {
-                    outputTextArea.setText(outputTextArea.getText()+ document.getData().get("Name")+ " , Age: "+
-                            document.getData().get("Age")+ " \n ");
-                    System.out.println(document.getId() + " => " + document.getData().get("Name"));
-                    person  = new Person(String.valueOf(document.getData().get("Name")),
-                            Integer.parseInt(document.getData().get("Age").toString()));
+                    String name = String.valueOf(document.getData().get("Name"));
+                    String age = String.valueOf(document.getData().get("Age"));
+                    String phone = document.getData().get("PhoneNumber") != null ?
+                            String.valueOf(document.getData().get("PhoneNumber")) : "";
+                    outputTextArea.appendText(
+                            name + " , Age: " + age + " , Phone: " + phone + " \n "
+                    );
+                    System.out.println(document.getId() + " => " + name);
+                    person  = new Person(name, Integer.parseInt(age), phone);
                     listOfUsers.add(person);
                 }
             }
@@ -110,7 +100,6 @@ public class PrimaryController {
                 System.out.println("No data");
             }
             key=true;
-
         }
         catch (InterruptedException | ExecutionException ex)
         {
@@ -118,7 +107,6 @@ public class PrimaryController {
         }
         return key;
     }
-
     public boolean registerUser() {
         UserRecord.CreateRequest request = new UserRecord.CreateRequest()
                 .setEmail("user222@example.com")
@@ -127,29 +115,44 @@ public class PrimaryController {
                 .setPhoneNumber("+11234567890")
                 .setDisplayName("John Doe")
                 .setDisabled(false);
-
         UserRecord userRecord;
         try {
             userRecord = DemoApp.fauth.createUser(request);
             System.out.println("Successfully created new user with Firebase Uid: " + userRecord.getUid()
-            + " check Firebase > Authentication > Users tab");
+                    + " check Firebase > Authentication > Users tab");
             return true;
-
         } catch (FirebaseAuthException ex) {
-            System.out.println("Error creating a new user in the firebase");
+            // Dubugging code
+            System.out.println("Error creating a new user in Firebase.");
+            System.out.println("Error code: " + ex.getErrorCode());
+            System.out.println("Message: " + ex.getMessage());
+            System.out.println("HTTP response: " + ex.getHttpResponse());
+
+            showDebugAlert(ex);
             return false;
         }
+    }
 
+    private void showDebugAlert(FirebaseAuthException ex) {
+        String debugMessage = "Failed to add user to Firebase:\n\n"
+                + "Error Code: " + ex.getErrorCode() + "\n"
+                + "Message: " + ex.getMessage() + "\n";
+        if (ex.getHttpResponse() != null) {
+            debugMessage += "HTTP Response: " + ex.getHttpResponse() + "\n";
+        }
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Firebase User Add Failed");
+        alert.setHeaderText("Debugger Information");
+        alert.setContentText(debugMessage);
+        alert.showAndWait();
     }
 
     public void addData() {
-
         DocumentReference docRef = DemoApp.fstore.collection("Persons").document(UUID.randomUUID().toString());
-
         Map<String, Object> data = new HashMap<>();
         data.put("Name", nameTextField.getText());
         data.put("Age", Integer.parseInt(ageTextField.getText()));
-
+        data.put("PhoneNumber", phoneNumberTextField.getText());
         ApiFuture<WriteResult> result = docRef.set(data);
     }
 }
